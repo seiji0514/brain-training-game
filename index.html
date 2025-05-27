@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字合わせ</title>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes correct {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --background-color: #f0f8ff;
+            --text-color: #2c3e50;
+            --animation-duration: 0.3s;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #2980b9;
+            --secondary-color: #ecf0f1;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --background-color: #2c3e50;
+            --text-color: #ecf0f1;
+        }
+
+        [data-theme="warm"] {
+            --primary-color: #e67e22;
+            --secondary-color: #d35400;
+            --accent-color: #c0392b;
+            --success-color: #27ae60;
+            --background-color: #fef5e7;
+            --text-color: #7f8c8d;
+        }
+
+        body {
+            font-family: "Hiragino Kaku Gothic Pro", "メイリオ", sans-serif;
+            background-color: var(--background-color);
+            text-align: center;
+            padding: 20px;
+            color: var(--text-color);
+            transition: all var(--animation-duration) ease;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        h1 {
+            font-size: 3em;
+            color: var(--secondary-color);
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+
+        .game-area {
+            margin: 20px 0;
+        }
+
+        .number-display {
+            font-size: 5em;
+            color: var(--accent-color);
+            margin: 20px 0;
+            font-weight: bold;
+            transition: all var(--animation-duration);
+        }
+
+        .number-display.correct {
+            animation: correct 0.5s;
+        }
+
+        .number-display.wrong {
+            animation: shake 0.5s;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin: 20px auto;
+            max-width: 800px;
+        }
+
+        button {
+            font-size: 2em;
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: all var(--animation-duration);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .score {
+            font-size: 2em;
+            color: var(--success-color);
+            margin: 20px 0;
+            transition: all var(--animation-duration);
+        }
+
+        .message {
+            font-size: 1.8em;
+            margin: 20px 0;
+            min-height: 1.5em;
+            transition: all var(--animation-duration);
+        }
+
+        .mode-selector {
+            margin: 20px 0;
+        }
+
+        .mode-button {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            margin: 0 10px;
+            background-color: var(--primary-color);
+        }
+
+        .mode-button.active {
+            background-color: var(--secondary-color);
+            transform: scale(1.1);
+        }
+
+        .timer {
+            font-size: 1.5em;
+            color: var(--accent-color);
+            margin: 10px 0;
+        }
+
+        .level-indicator {
+            font-size: 1.5em;
+            color: var(--secondary-color);
+            margin: 10px 0;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .settings-button {
+            font-size: 1em;
+            padding: 5px 10px;
+            margin: 5px;
+            background-color: var(--primary-color);
+        }
+
+        .high-scores {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: left;
+            z-index: 100;
+        }
+
+        .stats-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+
+        .theme-creator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+        }
+
+        .color-picker {
+            margin: 10px 0;
+        }
+
+        .color-picker label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .color-picker input {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .tutorial-content {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 600px;
+            text-align: left;
+        }
+
+        .tutorial-step {
+            display: none;
+        }
+
+        .tutorial-step.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .difficulty-selector {
+            margin: 10px 0;
+        }
+
+        .theme-selector {
+            margin: 10px 0;
+        }
+
+        .keyboard-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .accessibility-panel {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+
+        .social-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+
+        .analytics-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .combo-indicator {
+            font-size: 1.5em;
+            color: var(--accent-color);
+            margin: 10px 0;
+            display: none;
+        }
+
+        .power-up {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            animation: float 2s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .mission-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+
+        .achievement {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .achievement.unlocked {
+            background: var(--success-color);
+        }
+
+        .game-mode-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .game-mode-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .game-mode-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .game-mode-card.active {
+            border: 3px solid var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .game-mode-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .game-mode-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .game-mode-description {
+            font-size: 1em;
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .game-mode-difficulty {
+            font-size: 0.9em;
+            color: var(--accent-color);
+        }
+
+        .game-mode-new {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--accent-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+
+        .feature-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .feature-button {
+            font-size: 1em;
+            padding: 5px 10px;
+            margin: 5px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .feature-button:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .feature-panel-content {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 5px;
+        }
+
+        .feature-panel-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .calendar-day {
+            padding: 5px;
+            text-align: center;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .calendar-day.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .achievement-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .achievement-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: var(--background-color);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .achievement-progress {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .achievement-progress-bar {
+            height: 100%;
+            background: var(--success-color);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        .training-plan {
+            margin: 10px 0;
+            padding: 10px;
+            background: var(--background-color);
+            border-radius: 5px;
+        }
+
+        .training-exercise {
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .medal {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .medal-gold { background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FFD700"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>'); }
+        .medal-silver { background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23C0C0C0"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>'); }
+        .medal-bronze { background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23CD7F32"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"/></svg>'); }
+
+        .advanced-feature-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .advanced-feature-button {
+            font-size: 1em;
+            padding: 5px 10px;
+            margin: 5px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .advanced-feature-button:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        .advanced-feature-content {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 5px;
+        }
+
+        .advanced-feature-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .performance-graph {
+            width: 100%;
+            height: 200px;
+            background: var(--background-color);
+            border-radius: 5px;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .performance-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-color);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .performance-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .ai-suggestion {
+            padding: 10px;
+            margin: 5px 0;
+            background: var(--background-color);
+            border-radius: 5px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .custom-game-creator {
+            margin: 10px 0;
+            padding: 10px;
+            background: var(--background-color);
+            border-radius: 5px;
+        }
+
+        .custom-game-option {
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .voice-control-panel {
+            margin: 10px 0;
+            padding: 10px;
+            background: var(--background-color);
+            border-radius: 5px;
+        }
+
+        .voice-command {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 5px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        .multiplayer-panel {
+            margin: 10px 0;
+            padding: 10px;
+            background: var(--background-color);
+            border-radius: 5px;
+        }
+
+        .player-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .player-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .player-status.online { background: var(--success-color); }
+        .player-status.away { background: var(--accent-color); }
+        .player-status.offline { background: #ccc; }
+
+        .menu-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            background: var(--primary-color);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 2em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .menu-toggle:hover {
+            background: var(--secondary-color);
+        }
+
+        .menu-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 280px;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+            z-index: 2100;
+            display: none;
+            flex-direction: column;
+            padding: 32px 16px 16px 16px;
+            transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+            border-radius: 0 0 0 16px;
+        }
+        .menu-panel.open {
+            display: flex;
+        }
+        .menu-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .menu-list li {
+            margin-bottom: 20px;
+        }
+        .menu-list a {
+            display: block;
+            font-size: 1.2em;
+            padding: 16px 8px;
+            color: var(--primary-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .menu-list a:hover {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 3000;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 32px 24px;
+            border-radius: 12px;
+            min-width: 300px;
+            text-align: center;
+            position: relative;
+        }
+        .close {
+            position: absolute;
+            top: 8px; right: 16px;
+            font-size: 2em;
+            color: #888;
+            cursor: pointer;
+        }
+        .close:hover { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <!-- メニューボタン（右上固定） -->
+    <button class="menu-toggle" onclick="toggleMenu()" aria-label="メニューを開く">
+        &#9776;
+    </button>
+
+    <!-- メニューパネル（右からスライドイン） -->
+    <nav class="menu-panel">
+        <ul class="menu-list">
+            <li><a href="#home" onclick="toggleMenu();">ホーム</a></li>
+            <li><a href="javascript:void(0);" onclick="openScoreModal();">スコア</a></li>
+            <li><a href="javascript:void(0);" onclick="openSettingsModal();">設定</a></li>
+            <li><a href="javascript:void(0);" onclick="openHelpModal();">ヘルプ・遊び方</a></li>
+        </ul>
+    </nav>
+
+    <div id="home" class="container">
+        <h1>脳トレゲーム</h1>
+        <div class="game-mode-selector">
+            <div class="game-mode-card" onclick="setGameType('number')">
+                <div class="game-mode-icon">🔢</div>
+                <div class="game-mode-title">数字合わせ</div>
+                <div class="game-mode-description">表示された数字と同じ数字を選ぶゲーム</div>
+                <div class="game-mode-difficulty">難易度: ★☆☆</div>
+            </div>
+            <div class="game-mode-card" onclick="setGameType('memory')">
+                <div class="game-mode-icon">🧠</div>
+                <div class="game-mode-title">記憶力ゲーム</div>
+                <div class="game-mode-description">表示されたパターンを記憶して再現するゲーム</div>
+                <div class="game-mode-difficulty">難易度: ★★☆</div>
+            </div>
+            <div class="game-mode-card" onclick="setGameType('calculation')">
+                <div class="game-mode-icon">🧮</div>
+                <div class="game-mode-title">計算ゲーム</div>
+                <div class="game-mode-description">簡単な計算問題に答えるゲーム</div>
+                <div class="game-mode-difficulty">難易度: ★★☆</div>
+            </div>
+            <div class="game-mode-card" onclick="setGameType('word')">
+                <div class="game-mode-icon">📝</div>
+                <div class="game-mode-title">文字ゲーム</div>
+                <div class="game-mode-description">文字を組み合わせて単語を作るゲーム</div>
+                <div class="game-mode-difficulty">難易度: ★★☆</div>
+                <div class="game-mode-new">NEW</div>
+            </div>
+            <div class="game-mode-card" onclick="setGameType('reaction')">
+                <div class="game-mode-icon">⚡</div>
+                <div class="game-mode-title">反応ゲーム</div>
+                <div class="game-mode-description">素早く反応してボタンを押すゲーム</div>
+                <div class="game-mode-difficulty">難易度: ★★☆</div>
+                <div class="game-mode-new">NEW</div>
+            </div>
+        </div>
+        <div id="gameContent"></div>
+    </div>
+
+    <!-- メニューパネル -->
+    <nav class="menu-panel" style="display:none;">
+        <ul class="menu-list">
+            <li><a href="#" onclick="toggleMenu();">ホーム</a></li>
+            <li><a href="#" onclick="toggleMenu();">ゲームモード選択</a></li>
+            <li><a href="#" onclick="toggleMenu();">スコア</a></li>
+            <li><a href="#" onclick="toggleMenu();">設定</a></li>
+            <li><a href="#" onclick="toggleMenu();">ヘルプ・遊び方</a></li>
+        </ul>
+    </nav>
+
+    <!-- スコアモーダル -->
+    <div id="scoreModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeScoreModal()">&times;</span>
+            <h2>スコア</h2>
+            <p>ハイスコア：<span id="userHighScore">0</span></p>
+            <p>プレイ回数：<span id="userTotalGames">0</span></p>
+        </div>
+    </div>
+
+    <!-- 設定モーダル -->
+    <div id="settingsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettingsModal()">&times;</span>
+            <h2>設定</h2>
+            <div style="text-align:left; max-width:350px; margin:0 auto;">
+                <label>テーマ:
+                    <select onchange="setTheme(this.value)">
+                        <option value="light">ライト</option>
+                        <option value="dark">ダーク</option>
+                        <option value="warm">ウォーム</option>
+                    </select>
+                </label>
+                <br><br>
+                <label>フォントサイズ:
+                    <input id="fontSizeSlider" type="range" min="1" max="2" step="0.1" value="1" onchange="adjustFontSize(this.value)">
+                    <span id="fontSizeValue">1.0</span>em
+                </label>
+                <br><br>
+                <label>音量:
+                    <input id="volumeSlider" type="range" min="0" max="100" value="50" onchange="adjustVolume(this.value)">
+                    <span id="volumeValue">50</span>%
+                </label>
+                <br><br>
+                <label>アニメーション速度:
+                    <input id="animationSpeedSlider" type="range" min="0.1" max="1" step="0.1" value="0.3" onchange="adjustAnimationSpeed(this.value)">
+                    <span id="animationSpeedValue">0.3</span>s
+                </label>
+                <br><br>
+                <label>
+                    <input type="checkbox" id="autoSaveToggle" checked>
+                    自動保存
+                </label>
+                <br>
+                <label>
+                    <input type="checkbox" id="notificationToggle">
+                    通知
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- ヘルプモーダル -->
+    <div id="helpModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+            <h2>ヘルプ・遊び方</h2>
+            <p>各ゲームの説明や遊び方をここに記載します。</p>
+            <ul>
+                <li>数字合わせ：表示された数字と同じ数字を選ぶゲームです。</li>
+                <li>記憶力ゲーム：パターンを覚えて再現しましょう。</li>
+                <li>パズルゲーム：数字を正しい順序に並べ替えましょう。</li>
+                <li>計算ゲーム：計算問題に答えましょう。</li>
+                <li>文字ゲーム：文字を組み合わせて単語を作りましょう。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 数字合わせゲームモーダル -->
+    <div id="numberGameModal" class="modal" style="display:none;">
+        <div class="modal-content" id="numberGameModalContent">
+            <span class="close" onclick="closeNumberGameModal()">&times;</span>
+            <!-- ゲームUIはここに描画されます -->
+        </div>
+    </div>
+
+    <!-- 記憶力ゲームモーダル -->
+    <div id="memoryGameModal" class="modal" style="display:none;">
+        <div class="modal-content" id="memoryGameModalContent">
+            <span class="close" onclick="closeMemoryGameModal()">&times;</span>
+            <!-- 記憶力ゲームUIはここに描画されます -->
+        </div>
+    </div>
+
+    <!-- パターンゲームモーダル -->
+    <div id="patternGameModal" class="modal" style="display:none;">
+        <div class="modal-content" id="patternGameModalContent">
+            <span class="close" onclick="closePatternGameModal()">&times;</span>
+            <!-- パターンゲームUIはここに描画されます -->
+        </div>
+    </div>
+
+    <!-- 計算ゲームモーダル -->
+    <div id="calculationGameModal" class="modal" style="display:none;">
+        <div class="modal-content" id="calculationGameModalContent">
+            <span class="close" onclick="closeCalculationGameModal()">&times;</span>
+            <!-- 計算ゲームUIはここに描画されます -->
+        </div>
+    </div>
+
+    <!-- 文字ゲームモーダル -->
+    <div id="wordGameModal" class="modal" style="display:none;">
+        <div class="modal-content" id="wordGameModalContent">
+            <span class="close" onclick="closeWordGameModal()">&times;</span>
+            <!-- 文字ゲームUIはここに描画されます -->
+        </div>
+    </div>
+
+    <!-- 反応ゲームモーダル -->
+    <div id="reactionGameModal" class="modal" style="display:none;">
+        <div class="modal-content" id="reactionGameModalContent">
+            <span class="close" onclick="closeReactionGameModal()">&times;</span>
+            <!-- 反応ゲームUIはここに描画されます -->
+        </div>
+    </div>
+
+    <script>
+    let numberGameScore = 0;
+    let numberGameTarget = 0;
+
+    function toggleMenu() {
+        const menuPanel = document.querySelector('.menu-panel');
+        if (menuPanel) {
+            menuPanel.classList.toggle('open');
+        }
+    }
+
+    function setGameType(type) {
+        if (type === 'number') {
+            openNumberGameModal();
+        } else if (type === 'memory') {
+            openMemoryGameModal();
+        } else if (type === 'calculation') {
+            openCalculationGameModal();
+        } else if (type === 'word') {
+            openWordGameModal();
+        } else if (type === 'reaction') {
+            openReactionGameModal();
+        }
+    }
+
+    function openNumberGameModal() {
+        document.getElementById('numberGameModal').style.display = 'flex';
+        initializeNumberGame('normal');
+    }
+
+    function closeNumberGameModal() {
+        document.getElementById('numberGameModal').style.display = 'none';
+    }
+
+    function initializeNumberGame(level) {
+        // レベル取得
+        if (!level) {
+            level = document.getElementById('numberLevelSelect')?.value || 'normal';
+        }
+        let digit, choiceCount;
+        if (level === 'easy') {
+            digit = 3; choiceCount = 3;
+        } else if (level === 'hard') {
+            digit = 5; choiceCount = 5;
+        } else {
+            digit = 4; choiceCount = 4;
+        }
+        const min = Math.pow(10, digit - 1);
+        const max = Math.pow(10, digit) - 1;
+        let targetNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+        let score = 0;
+        const modalContent = document.getElementById('numberGameModalContent');
+        modalContent.innerHTML = `
+            <span class="close" onclick="closeNumberGameModal()">&times;</span>
+            <div style="margin-bottom:10px;">
+                <label>レベル:
+                    <select id="numberLevelSelect">
+                        <option value="easy">簡単</option>
+                        <option value="normal" selected>普通</option>
+                        <option value="hard">難しい</option>
+                    </select>
+                </label>
+            </div>
+            <div class="number-display" id="targetNumber">${targetNumber}</div>
+            <div class="buttons" id="numberButtons"></div>
+            <div class="score" id="score">0</div>
+            <div class="message" id="message"></div>
+        `;
+        document.getElementById('numberLevelSelect').value = level;
+        document.getElementById('numberLevelSelect').onchange = function() {
+            initializeNumberGame(this.value);
+        };
+        const numberButtons = document.getElementById('numberButtons');
+        // 正解＋不正解の選択肢を生成
+        let choices = [targetNumber];
+        while (choices.length < choiceCount) {
+            let n = Math.floor(Math.random() * (max - min + 1)) + min;
+            if (!choices.includes(n)) choices.push(n);
+        }
+        // シャッフル
+        choices = choices.sort(() => Math.random() - 0.5);
+        choices.forEach(num => {
+            const btn = document.createElement('button');
+            btn.textContent = num;
+            btn.onclick = function() {
+                if (num === targetNumber) {
+                    score += 10;
+                    document.getElementById('message').textContent = '正解！';
+                    document.getElementById('score').textContent = score;
+                    setTimeout(() => initializeNumberGame(level), 800);
+                } else {
+                    document.getElementById('message').textContent = '違います';
+                }
+            };
+            numberButtons.appendChild(btn);
+        });
+    }
+
+    function openScoreModal() {
+        document.getElementById('scoreModal').style.display = 'flex';
+        toggleMenu();
+    }
+
+    function closeScoreModal() {
+        document.getElementById('scoreModal').style.display = 'none';
+    }
+
+    function openSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'flex';
+        toggleMenu();
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    function openHelpModal() {
+        document.getElementById('helpModal').style.display = 'flex';
+        toggleMenu();
+    }
+
+    function closeHelpModal() {
+        document.getElementById('helpModal').style.display = 'none';
+    }
+
+    function openMemoryGameModal() {
+        document.getElementById('memoryGameModal').style.display = 'flex';
+        initializeMemoryGame();
+    }
+
+    function closeMemoryGameModal() {
+        document.getElementById('memoryGameModal').style.display = 'none';
+    }
+
+    function initializeMemoryGame() {
+        // 3～5桁のランダムな数字を生成
+        const digit = Math.floor(Math.random() * 3) + 3; // 3,4,5
+        const min = Math.pow(10, digit - 1);
+        const max = Math.pow(10, digit) - 1;
+        const pattern = Math.floor(Math.random() * (max - min + 1)) + min;
+        let score = 0;
+        const modalContent = document.getElementById('memoryGameModalContent');
+        modalContent.innerHTML = `
+            <span class="close" onclick="closeMemoryGameModal()">&times;</span>
+            <div class="memory-pattern" id="memoryPattern" style="font-size:2.5em;letter-spacing:0.2em;">${pattern}</div>
+            <div id="memoryCountdown" style="font-size:1.5em;margin:10px 0;">5</div>
+            <div id="memoryInputArea" style="margin-top:20px;display:none;">
+                <input id="memoryUserInput" type="text" inputmode="numeric" style="font-size:2em;width:120px;text-align:center;" maxlength="5" autocomplete="off" />
+                <button id="memoryCheckBtn" style="font-size:1.2em;">判定</button>
+            </div>
+            <div class="score" id="memoryScore">0</div>
+            <div class="message" id="memoryMessage"></div>
+        `;
+        let count = 5;
+        const countdownEl = document.getElementById('memoryCountdown');
+        const timer = setInterval(() => {
+            count--;
+            countdownEl.textContent = count;
+            if (count === 0) {
+                clearInterval(timer);
+                document.getElementById('memoryPattern').textContent = 'おぼえていますか？';
+                countdownEl.style.display = 'none';
+                document.getElementById('memoryInputArea').style.display = 'block';
+            }
+        }, 1000);
+        // 判定ボタン
+        document.getElementById('memoryCheckBtn').onclick = function() {
+            const userInput = document.getElementById('memoryUserInput').value;
+            if (userInput === String(pattern)) {
+                score += 10;
+                document.getElementById('memoryMessage').textContent = '正解！';
+                document.getElementById('memoryScore').textContent = score;
+            } else {
+                document.getElementById('memoryMessage').textContent = '違います';
+            }
+            setTimeout(() => {
+                initializeMemoryGame();
+            }, 1200);
+        };
+    }
+
+    function openCalculationGameModal() {
+        document.getElementById('calculationGameModal').style.display = 'flex';
+        initializeCalculationGame();
+    }
+
+    function closeCalculationGameModal() {
+        document.getElementById('calculationGameModal').style.display = 'none';
+    }
+
+    function initializeCalculationGame() {
+        const totalQuestions = 20;
+        let current = 0;
+        let correct = 0;
+        let questions = [];
+        // 問題生成
+        function makeQuestion() {
+            const ops = ['+', '-', '×', '÷'];
+            const op = ops[Math.floor(Math.random() * 4)];
+            let a, b, answer;
+            if (op === '+') {
+                a = Math.floor(Math.random() * 90) + 10; // 10-99
+                b = Math.floor(Math.random() * 90) + 10;
+                answer = a + b;
+            } else if (op === '-') {
+                a = Math.floor(Math.random() * 90) + 10;
+                b = Math.floor(Math.random() * a); // a > b
+                answer = a - b;
+            } else if (op === '×') {
+                a = Math.floor(Math.random() * 9) + 2; // 2-10
+                b = Math.floor(Math.random() * 9) + 2;
+                answer = a * b;
+            } else if (op === '÷') {
+                b = Math.floor(Math.random() * 9) + 2;
+                answer = Math.floor(Math.random() * 9) + 2;
+                a = b * answer;
+            }
+            return { a, b, op, answer };
+        }
+        for (let i = 0; i < totalQuestions; i++) {
+            questions.push(makeQuestion());
+        }
+        const modalContent = document.getElementById('calculationGameModalContent');
+        function showQuestion() {
+            if (current >= totalQuestions) {
+                modalContent.innerHTML = `
+                    <span class="close" onclick="closeCalculationGameModal()">&times;</span>
+                    <h2>計算ゲーム 結果</h2>
+                    <p>正解数：${correct} / ${totalQuestions}</p>
+                    <button id="calcRetryBtn" style="font-size:1.2em;">もう一度</button>
+                `;
+                document.getElementById('calcRetryBtn').onclick = initializeCalculationGame;
+                return;
+            }
+            const q = questions[current];
+            modalContent.innerHTML = `
+                <span class="close" onclick="closeCalculationGameModal()">&times;</span>
+                <h2>計算ゲーム (${current+1} / ${totalQuestions})</h2>
+                <div style="font-size:2em;margin:20px 0;">${q.a} ${q.op} ${q.b} = <input id="calcUserInput" type="number" style="font-size:1em;width:80px;text-align:center;" autocomplete="off" /></div>
+                <button id="calcCheckBtn" style="font-size:1.2em;">判定</button>
+                <div class="message" id="calcMessage"></div>
+            `;
+            document.getElementById('calcCheckBtn').onclick = function() {
+                const userInput = document.getElementById('calcUserInput').value;
+                if (String(userInput) === String(q.answer)) {
+                    correct++;
+                    document.getElementById('calcMessage').textContent = '正解！';
+                } else {
+                    document.getElementById('calcMessage').textContent = `違います（正解: ${q.answer}）`;
+                }
+                current++;
+                setTimeout(showQuestion, 900);
+            };
+        }
+        showQuestion();
+    }
+
+    function openWordGameModal() {
+        document.getElementById('wordGameModal').style.display = 'flex';
+        initializeWordGame();
+    }
+
+    function closeWordGameModal() {
+        document.getElementById('wordGameModal').style.display = 'none';
+    }
+
+    function initializeWordGame() {
+        // 問題リスト（小学生レベル）
+        const problems = [
+            // ひらがな→カタカナ
+            {q: 'さくら', a: 'サクラ', type: 'ひらがな→カタカナ'},
+            {q: 'すいか', a: 'スイカ', type: 'ひらがな→カタカナ'},
+            {q: 'たまご', a: 'タマゴ', type: 'ひらがな→カタカナ'},
+            {q: 'みかん', a: 'ミカン', type: 'ひらがな→カタカナ'},
+            // カタカナ→ひらがな
+            {q: 'バナナ', a: 'ばなな', type: 'カタカナ→ひらがな'},
+            {q: 'トマト', a: 'とまと', type: 'カタカナ→ひらがな'},
+            {q: 'メロン', a: 'めろん', type: 'カタカナ→ひらがな'},
+            {q: 'サル', a: 'さる', type: 'カタカナ→ひらがな'},
+            // 漢字→読み
+            {q: '山', a: 'やま', type: '漢字→読み'},
+            {q: '川', a: 'かわ', type: '漢字→読み'},
+            {q: '空', a: 'そら', type: '漢字→読み'},
+            {q: '花', a: 'はな', type: '漢字→読み'},
+            {q: '犬', a: 'いぬ', type: '漢字→読み'},
+            {q: '猫', a: 'ねこ', type: '漢字→読み'},
+            {q: '学校', a: 'がっこう', type: '漢字→読み'},
+            {q: '先生', a: 'せんせい', type: '漢字→読み'},
+            {q: '友達', a: 'ともだち', type: '漢字→読み'},
+            {q: '日本', a: 'にほん', type: '漢字→読み'},
+            {q: '東京', a: 'とうきょう', type: '漢字→読み'}
+        ];
+        // 10問ランダム
+        const shuffled = problems.sort(() => Math.random() - 0.5).slice(0, 10);
+        let current = 0;
+        let correct = 0;
+        const modalContent = document.getElementById('wordGameModalContent');
+        function showQuestion() {
+            if (current >= shuffled.length) {
+                modalContent.innerHTML = `
+                    <span class="close" onclick="closeWordGameModal()">&times;</span>
+                    <h2>文字ゲーム 結果</h2>
+                    <p>正解数：${correct} / ${shuffled.length}</p>
+                    <button id="wordRetryBtn" style="font-size:1.2em;">もう一度</button>
+                `;
+                document.getElementById('wordRetryBtn').onclick = initializeWordGame;
+                return;
+            }
+            const q = shuffled[current];
+            modalContent.innerHTML = `
+                <span class="close" onclick="closeWordGameModal()">&times;</span>
+                <h2>文字ゲーム (${current+1} / ${shuffled.length})</h2>
+                <div style="font-size:1.2em;margin:10px 0;">【${q.type}】</div>
+                <div style="font-size:2em;margin:20px 0;">${q.q}</div>
+                <input id="wordUserInput" type="text" style="font-size:1.2em;width:180px;text-align:center;" autocomplete="off" />
+                <button id="wordCheckBtn" style="font-size:1.2em;">判定</button>
+                <div class="message" id="wordMessage"></div>
+            `;
+            document.getElementById('wordCheckBtn').onclick = function() {
+                const userInput = document.getElementById('wordUserInput').value.trim();
+                if (userInput === q.a) {
+                    correct++;
+                    document.getElementById('wordMessage').textContent = '正解！';
+                } else {
+                    document.getElementById('wordMessage').textContent = `違います（正解: ${q.a}）`;
+                }
+                current++;
+                setTimeout(showQuestion, 900);
+            };
+        }
+        showQuestion();
+    }
+
+    function openReactionGameModal() {
+        document.getElementById('reactionGameModal').style.display = 'flex';
+        initializeReactionGame();
+    }
+
+    function closeReactionGameModal() {
+        document.getElementById('reactionGameModal').style.display = 'none';
+    }
+
+    function initializeReactionGame() {
+        const modalContent = document.getElementById('reactionGameModalContent');
+        let trial = 0;
+        let results = [];
+        let waiting = false;
+        let startTime = 0;
+        let timeoutId = null;
+        function showStart() {
+            modalContent.innerHTML = `
+                <span class="close" onclick="closeReactionGameModal()">&times;</span>
+                <h2>反応ゲーム</h2>
+                <p>「スタート」ボタンを押して、画面が変わったらすぐに「今だ！」を押してください。<br>5回計測します。</p>
+                <button id="reactionStartBtn" style="font-size:1.5em;">スタート</button>
+                <div class="message" id="reactionMessage"></div>
+            `;
+            document.getElementById('reactionStartBtn').onclick = startTrial;
+        }
+        function startTrial() {
+            modalContent.innerHTML = `
+                <span class="close" onclick="closeReactionGameModal()">&times;</span>
+                <h2>反応ゲーム (${trial+1}/5)</h2>
+                <p style="font-size:1.3em;">「今だ！」が出るまで待ってください…</p>
+                <button id="waitBtn" style="font-size:1.5em;" disabled>待機中...</button>
+                <div class="message" id="reactionMessage"></div>
+            `;
+            waiting = true;
+            const waitTime = Math.random() * 2000 + 1000; // 1～3秒
+            timeoutId = setTimeout(() => {
+                showNowBtn();
+            }, waitTime);
+            document.getElementById('waitBtn').onclick = function() {
+                if (waiting) {
+                    clearTimeout(timeoutId);
+                    document.getElementById('reactionMessage').textContent = 'フライング！もう一度スタートしてください。';
+                    setTimeout(showStart, 1200);
+                }
+            };
+        }
+        function showNowBtn() {
+            waiting = false;
+            startTime = Date.now();
+            modalContent.innerHTML = `
+                <span class="close" onclick="closeReactionGameModal()">&times;</span>
+                <h2>反応ゲーム (${trial+1}/5)</h2>
+                <button id="nowBtn" style="font-size:2em;background:var(--accent-color);color:#fff;">今だ！</button>
+                <div class="message" id="reactionMessage"></div>
+            `;
+            document.getElementById('nowBtn').onclick = function() {
+                const reaction = Date.now() - startTime;
+                results.push(reaction);
+                trial++;
+                if (trial < 5) {
+                    document.getElementById('reactionMessage').textContent = `反応時間: ${reaction} ms`;
+                    setTimeout(startTrial, 1000);
+                } else {
+                    showResult();
+                }
+            };
+        }
+        function showResult() {
+            const avg = Math.round(results.reduce((a,b)=>a+b,0)/results.length);
+            modalContent.innerHTML = `
+                <span class="close" onclick="closeReactionGameModal()">&times;</span>
+                <h2>反応ゲーム 結果</h2>
+                <p>平均反応時間: <b>${avg} ms</b></p>
+                <p>各回の反応時間: ${results.map(r=>r+'ms').join(', ')}</p>
+                <button id="reactionRetryBtn" style="font-size:1.2em;">もう一度</button>
+            `;
+            document.getElementById('reactionRetryBtn').onclick = function() {
+                trial = 0;
+                results = [];
+                showStart();
+            };
+        }
+        showStart();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('fontSizeSlider').oninput = function() {
+            document.getElementById('fontSizeValue').textContent = this.value;
+        };
+        document.getElementById('volumeSlider').oninput = function() {
+            document.getElementById('volumeValue').textContent = this.value;
+        };
+        document.getElementById('animationSpeedSlider').oninput = function() {
+            document.getElementById('animationSpeedValue').textContent = this.value;
+        };
+    });
+    </script>
+</body>
+</html> 
